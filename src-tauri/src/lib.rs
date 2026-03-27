@@ -7,6 +7,40 @@ use filter_map::{FilterMapping, load_mappings, save_mappings};
 use log_parser::{LightGroup, parse_wbpp_log};
 use tauri::Manager;
 
+fn settings_path(app_handle: &tauri::AppHandle) -> std::path::PathBuf {
+    app_handle
+        .path()
+        .app_data_dir()
+        .unwrap_or_else(|_| std::path::PathBuf::from("."))
+        .join("settings.json")
+}
+
+#[tauri::command]
+fn get_bortle(app_handle: tauri::AppHandle) -> u8 {
+    let path = settings_path(&app_handle);
+    std::fs::read_to_string(&path)
+        .ok()
+        .and_then(|s| serde_json::from_str::<serde_json::Value>(&s).ok())
+        .and_then(|v| v["bortle"].as_u64())
+        .map(|b| b.clamp(1, 9) as u8)
+        .unwrap_or(4)
+}
+
+#[tauri::command]
+fn save_bortle(app_handle: tauri::AppHandle, bortle: u8) -> Result<(), String> {
+    let path = settings_path(&app_handle);
+    // Load existing settings or start fresh
+    let mut settings = std::fs::read_to_string(&path)
+        .ok()
+        .and_then(|s| serde_json::from_str::<serde_json::Value>(&s).ok())
+        .unwrap_or_else(|| serde_json::json!({}));
+    settings["bortle"] = serde_json::json!(bortle);
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+    }
+    std::fs::write(&path, settings.to_string()).map_err(|e| e.to_string())
+}
+
 #[tauri::command]
 fn parse_log(path: String) -> Result<Vec<LightGroup>, String> {
     let content = std::fs::read_to_string(&path).map_err(|e| e.to_string())?;
@@ -98,6 +132,8 @@ pub fn run() {
             save_filter_mappings,
             export_csv,
             get_astrobin_filters,
+            get_bortle,
+            save_bortle,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

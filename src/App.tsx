@@ -153,7 +153,13 @@ export default function App() {
 
   useEffect(() => {
     invoke<FilterMapping[]>("get_filter_mappings").then(setMappings).catch(() => {});
+    invoke<number>("get_bortle").then(setBortle).catch(() => {});
   }, []);
+
+  function updateBortle(value: number) {
+    setBortle(value);
+    invoke("save_bortle", { bortle: value }).catch(() => {});
+  }
 
   const unmappedCodes = [...new Set(groups.map((g) => g.filter_code))].filter(
     (code) => !mappings.find((m) => m.code === code)
@@ -376,7 +382,7 @@ export default function App() {
                 min={1}
                 max={9}
                 value={bortle}
-                onChange={(e) => setBortle(Number(e.target.value))}
+                onChange={(e) => updateBortle(Number(e.target.value))}
               />
               <button
                 style={
