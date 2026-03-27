@@ -206,16 +206,22 @@ export default function App() {
     setView("settings");
 
     if (astrobinFilters.length === 0) {
-      setFiltersLoading(true);
-      setFiltersError(null);
-      try {
-        const filters = await invoke<AstrobinFilter[]>("get_astrobin_filters");
-        setAstrobinFilters(filters);
-      } catch (e) {
-        setFiltersError(String(e));
-      } finally {
-        setFiltersLoading(false);
-      }
+      await loadAstrobinFilters(false);
+    }
+  }
+
+  async function loadAstrobinFilters(forceRefresh: boolean) {
+    setFiltersLoading(true);
+    setFiltersError(null);
+    try {
+      const filters = await invoke<AstrobinFilter[]>("get_astrobin_filters", {
+        forceRefresh,
+      });
+      setAstrobinFilters(filters);
+    } catch (e) {
+      setFiltersError(String(e));
+    } finally {
+      setFiltersLoading(false);
     }
   }
 
@@ -266,7 +272,7 @@ export default function App() {
 
           {filtersLoading && (
             <div style={s.infoBox}>
-              Fetching AstroBin filter database… (~2400 filters)
+              Fetching AstroBin filter database… (~2,400 filters)
             </div>
           )}
           {filtersError && (
@@ -274,9 +280,19 @@ export default function App() {
               Failed to load AstroBin filters: {filtersError}
             </div>
           )}
-          {!filtersLoading && astrobinFilters.length > 0 && (
-            <div style={{ ...s.hint, marginBottom: 10 }}>
-              {astrobinFilters.length} filters loaded
+          {!filtersLoading && (
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
+              <span style={s.hint}>
+                {astrobinFilters.length > 0
+                  ? `${astrobinFilters.length} filters loaded`
+                  : "Filter database not loaded"}
+              </span>
+              <button
+                style={s.btnSecondary}
+                onClick={() => loadAstrobinFilters(true)}
+              >
+                ↻ Refresh database
+              </button>
             </div>
           )}
 

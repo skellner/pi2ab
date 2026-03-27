@@ -137,7 +137,13 @@ fn save_cache(app_data_dir: &Path, filters: &[AstrobinFilter]) {
 }
 
 /// Returns the full filter list, using a 7-day local cache.
-pub async fn get_filters(app_data_dir: &Path) -> Result<Vec<AstrobinFilter>, String> {
+/// Pass `force_refresh = true` to delete the cache and re-fetch immediately.
+pub async fn get_filters(app_data_dir: &Path, force_refresh: bool) -> Result<Vec<AstrobinFilter>, String> {
+    if force_refresh {
+        let _ = std::fs::remove_file(cache_path(app_data_dir));
+        eprintln!("[pi2ab] cache cleared, forcing re-fetch");
+    }
+
     if cache_is_fresh(app_data_dir) {
         if let Some(cached) = load_cache(app_data_dir) {
             eprintln!("[pi2ab] loaded {} filters from cache", cached.len());

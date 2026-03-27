@@ -37,12 +37,13 @@ fn save_filter_mappings(
 #[tauri::command]
 async fn get_astrobin_filters(
     app_handle: tauri::AppHandle,
+    force_refresh: bool,
 ) -> Result<Vec<AstrobinFilter>, String> {
     let dir = app_handle
         .path()
         .app_data_dir()
         .unwrap_or_else(|_| std::path::PathBuf::from("."));
-    astrobin::get_filters(&dir).await
+    astrobin::get_filters(&dir, force_refresh).await
 }
 
 #[tauri::command]
